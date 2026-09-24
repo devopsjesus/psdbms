@@ -1,2 +1,105 @@
 # psdbms
-I am a fool. This is a project to simulate a lightweight DMBS solution using PowerShell and CSV files. It will not be performant; it will not scale; it is for when the tool required should respect data normalization but not require an entire flipping DBMS. I just need to manage records across entities, dang it!
+
+A lightweight, schema-driven entity manager for PowerShell. It uses CSV files when a full DBMS would be excessive but records still need validation, keys, uniqueness, and simple relationships.
+
+## Create an entity
+
+```powershell
+Import-Module ./psdbms.psd1
+
+$schema = [PsEntitySchema]::new('people', './data/people.csv', @(
+		@{ Name = 'id'; Type = 'guid'; Key = $true; Generated = $true }
+		@{ Name = 'name'; Type = 'string'; Required = $true }
+		@{ Name = 'active'; Type = 'bool' }
+))
+$people = [PsEntity]::new($schema)
+$people.Create()
+
+$record = $people.Add(@{ name = 'Ada'; active = $true })
+$id = $record.id
+$people.Find(@{ id = $id })
+$people.Update($id, @{ name = 'Grace' })
+$people.Remove(@{ id = $id })
+```
+
+For a schema with multiple key columns, pass all key values as a hashtable:
+
+```powershell
+$entity.Update(@{ tenant_id = 'tenant-1'; record_id = 'record-1' }, @{ name = 'Grace' })
+```
+
+`Create()` refuses to overwrite an existing file. Use `Create($true)` to recreate it.
+
+## JSON schemas
+
+Schemas are reusable and remain separate from application code:
+
+```json
+{
+	"name": "people",
+	"path": "../data/people.csv",
+	"columns": [
+		{ "name": "id", "type": "guid", "key": true, "generated": true },
+		{ "name": "tenant", "type": "string", "required": true },
+		{ "name": "name", "type": "string", "required": true }
+	],
+	"uniqueGroups": [
+		{ "columns": ["tenant", "name"] }
+	]
+}
+```
+
+Paths are resolved relative to the schema file:
+
+```powershell
+$schema = [PsEntitySchema]::new('./schemas/people.json')
+$people = [PsEntity]::new($schema)
+$people.Create()
+```
+
+Override the schema's data path with the two-argument constructor:
+
+```powershell
+$schema = [PsEntitySchema]::new('./schemas/people.json', './alternate/people.csv')
+```
+
+The schema JSON remains the authoritative metadata source. Reopen an existing entity by passing its schema path:
+
+```powershell
+$metadata = [PsEntity]::Open('./schemas/people.json').Schema
+```
+
+Use `Find()` to return records:
+
+```powershell
+$people = [PsEntity]::Open('./schemas/people.json').Data
+```
+
+The class provides the same discrete retrieval lifecycle without calling creation commands:
+
+```powershell
+$peopleEntity = [PsEntity]::Open('./schemas/people.json')
+$peopleEntity.Find(@{ name = 'Ada' })
+```
+
+Retrieval loads key, required, type, uniqueness, and relationship metadata from the schema and validates it against the CSV header.
+
+Supported types are `string`, `int`, `long`, `decimal`, `double`, `bool`, `datetime`, `guid`, and `uri`. A key is automatically required and unique. Other columns can set `unique` explicitly. A key can set `generated` to create its value when omitted: `string` and `guid` keys receive a GUID, while `int` and `long` keys receive the next numeric value. Callers may still provide an explicit value.
+
+Use `uniqueGroups` when a combination of values must be unique across rows while each value may repeat independently. Grouped constraints are enforced during both `Add()` and `Update()`. A group containing an empty value is not constrained.
+
+Relationships reference another entity by path. The foreign-key column name must match the key column name in the referenced entity. Relative reference paths are resolved from the data file's directory:
+
+```json
+{
+	"name": "id",
+	"required": true,
+	"references": "people.csv"
+}
+```
+
+Here, the local `id` value is checked against the `id` column in `people.csv`. A reference is rejected if the referenced entity does not contain a same-named column or the value is absent. References are enforced when records are added or updated. The bundled schemas represent a GitHub and Azure credential model, while the entity engine itself is domain independent.
+
+## Scope
+
+CSV storage is intentionally small-scale. Writes replace the file for updates and deletes, operations are not transactional, and concurrent writers are not coordinated. Use a conventional database when those guarantees matter.

@@ -1,0 +1,17 @@
+{
+    "name": "gh_repository",
+    "path": "../data/gh_repository.csv",
+    "columns": [
+        {
+            "name": "gh_repository_id",
+            "type": "string",
+            "key": true,
+            "generated": false
+        },
+        {
+            "name": "gh_repository_name",
+            "type": "string",
+            "required": true
+        }
+    ]
+}

@@ -1,0 +1,22 @@
+{
+    "name": "az_service_principal",
+    "path": "../data/az_service_principal.csv",
+    "columns": [
+        {
+            "name": "az_service_principal_id",
+            "type": "string",
+            "key": true,
+            "generated": false
+        },
+        {
+            "name": "az_service_principal_name",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "az_service_principal_secr_kv_ref",
+            "type": "uri",
+            "required": true
+        }
+    ]
+}

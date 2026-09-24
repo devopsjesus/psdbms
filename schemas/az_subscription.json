@@ -1,0 +1,17 @@
+{
+    "name": "az_subscription",
+    "path": "../data/az_subscription.csv",
+    "columns": [
+        {
+            "name": "az_subscription_id",
+            "type": "string",
+            "key": true,
+            "generated": false
+        },
+        {
+            "name": "az_subscription_name",
+            "type": "string",
+            "required": false
+        }
+    ]
+}

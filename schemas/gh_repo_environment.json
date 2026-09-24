@@ -1,0 +1,18 @@
+{
+    "name": "gh_repo_environment",
+    "path": "../data/gh_repo_environment.csv",
+    "columns": [
+        {
+            "name": "gh_repo_environment_id",
+            "type": "string",
+            "key": true,
+            "generated": true
+        },
+        {
+            "name": "gh_repo_environment_name",
+            "type": "string",
+            "required": true,
+            "unique": true
+        }
+    ]
+}
