@@ -1,0 +1,23 @@
+{
+    "name": "invalid-unique-group",
+    "path": "invalid-unique-group.csv",
+    "columns": [
+        {
+            "name": "id",
+            "type": "string",
+            "key": true
+        },
+        {
+            "name": "name",
+            "type": "string"
+        }
+    ],
+    "uniqueGroups": [
+        {
+            "columns": [
+                "name",
+                "missing"
+            ]
+        }
+    ]
+}

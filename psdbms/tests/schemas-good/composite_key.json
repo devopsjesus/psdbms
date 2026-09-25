@@ -1,0 +1,21 @@
+{
+    "name": "composite-key",
+    "path": "composite-key.csv",
+    "columns": [
+        {
+            "name": "first_id",
+            "type": "string",
+            "key": true
+        },
+        {
+            "name": "second_id",
+            "type": "string",
+            "key": true
+        },
+        {
+            "name": "name",
+            "type": "string",
+            "required": true
+        }
+    ]
+}

@@ -1,0 +1,14 @@
+{
+    "name": "duplicate-columns",
+    "path": "duplicate-columns.csv",
+    "columns": [
+        {
+            "name": "id",
+            "type": "string"
+        },
+        {
+            "name": "id",
+            "type": "string"
+        }
+    ]
+}

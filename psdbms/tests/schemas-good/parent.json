@@ -1,0 +1,17 @@
+{
+    "name": "parent",
+    "path": "parent.csv",
+    "columns": [
+        {
+            "name": "parent_id",
+            "type": "string",
+            "key": true,
+            "generated": true
+        },
+        {
+            "name": "parent_name",
+            "type": "string",
+            "required": true
+        }
+    ]
+}

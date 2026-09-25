@@ -1,0 +1,31 @@
+{
+    "name": "child",
+    "path": "child.csv",
+    "columns": [
+        {
+            "name": "child_id",
+            "type": "guid",
+            "key": true,
+            "generated": true
+        },
+        {
+            "name": "parent_id",
+            "type": "string",
+            "required": true,
+            "references": "parent.csv"
+        },
+        {
+            "name": "child_name",
+            "type": "string",
+            "required": true
+        }
+    ],
+    "uniqueGroups": [
+        {
+            "columns": [
+                "parent_id",
+                "child_name"
+            ]
+        }
+    ]
+}

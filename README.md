@@ -5,14 +5,10 @@ A lightweight, schema-driven entity manager for PowerShell. It uses CSV files wh
 ## Create an entity
 
 ```powershell
-Import-Module ./psdbms.psd1
+Import-Module ./psdbms/psdbms.psd1
 
-$schema = [PsEntitySchema]::new('people', './data/people.csv', @(
-		@{ Name = 'id'; Type = 'guid'; Key = $true; Generated = $true }
-		@{ Name = 'name'; Type = 'string'; Required = $true }
-		@{ Name = 'active'; Type = 'bool' }
-))
-$people = [PsEntity]::new($schema)
+$schema = New-PsEntitySchema -SchemaPath './schemas/people.json'
+$people = New-PsEntity -Schema $schema
 $people.Create()
 
 $record = $people.Add(@{ name = 'Ada'; active = $true })
@@ -52,33 +48,22 @@ Schemas are reusable and remain separate from application code:
 Paths are resolved relative to the schema file:
 
 ```powershell
-$schema = [PsEntitySchema]::new('./schemas/people.json')
-$people = [PsEntity]::new($schema)
+$schema = New-PsEntitySchema -SchemaPath './schemas/people.json'
+$people = New-PsEntity -Schema $schema
 $people.Create()
 ```
 
 Override the schema's data path with the two-argument constructor:
 
 ```powershell
-$schema = [PsEntitySchema]::new('./schemas/people.json', './alternate/people.csv')
+$schema = New-PsEntitySchema -SchemaPath './schemas/people.json' -DataPath './alternate/people.csv'
 ```
 
-The schema JSON remains the authoritative metadata source. Reopen an existing entity by passing its schema path:
+The schema JSON remains the authoritative metadata source. To access an existing entity without recreating its CSV, construct it from the schema and validate the data source:
 
 ```powershell
-$metadata = [PsEntity]::Open('./schemas/people.json').Schema
-```
-
-Use `Find()` to return records:
-
-```powershell
-$people = [PsEntity]::Open('./schemas/people.json').Data
-```
-
-The class provides the same discrete retrieval lifecycle without calling creation commands:
-
-```powershell
-$peopleEntity = [PsEntity]::Open('./schemas/people.json')
+$peopleEntity = New-PsEntitySchema -SchemaPath './schemas/people.json' | New-PsEntity
+$peopleEntity.Validate()
 $peopleEntity.Find(@{ name = 'Ada' })
 ```
 

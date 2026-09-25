@@ -1,0 +1,69 @@
+{
+    "name": "typed",
+    "path": "typed.csv",
+    "columns": [
+        {
+            "name": "id",
+            "type": "int",
+            "key": true,
+            "generated": true
+        },
+        {
+            "name": "string_value",
+            "type": "string"
+        },
+        {
+            "name": "integer_value",
+            "type": "int"
+        },
+        {
+            "name": "long_value",
+            "type": "long"
+        },
+        {
+            "name": "decimal_value",
+            "type": "decimal"
+        },
+        {
+            "name": "double_value",
+            "type": "double"
+        },
+        {
+            "name": "boolean_value",
+            "type": "bool"
+        },
+        {
+            "name": "datetime_value",
+            "type": "datetime"
+        },
+        {
+            "name": "guid_value",
+            "type": "guid"
+        },
+        {
+            "name": "uri_value",
+            "type": "uri"
+        },
+        {
+            "name": "unique_value",
+            "type": "string",
+            "unique": true
+        },
+        {
+            "name": "group_value_a",
+            "type": "string"
+        },
+        {
+            "name": "group_value_b",
+            "type": "string"
+        }
+    ],
+    "uniqueGroups": [
+        {
+            "columns": [
+                "group_value_a",
+                "group_value_b"
+            ]
+        }
+    ]
+}

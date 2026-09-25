@@ -1,4 +1,5 @@
-using module './psdbms.psd1'
+Import-Module '.\psdbms\psdbms.psd1'
+$OVERWRITE_DATASTORE = $false
 
 # Example credential definition
 $credentialDefinition = @{
@@ -19,9 +20,10 @@ $spData = @{
     az_service_principal_name        = $credentialDefinition.az_service_principal_name
     az_service_principal_secr_kv_ref = $credentialDefinition.az_service_principal_secr_kv_ref
 }
-$spSchema = [PsEntitySchema]::new('.\schemas\az_service_principal.json')
-$spEntity = [PsEntity]::new($spSchema)
-$spEntity.Add($spData)
+$spSchema = New-PsEntitySchema -SchemaPath '.\schemas\az_service_principal.json'
+$spEntity = New-PsEntity -Schema $spSchema
+$spEntity.Create($OVERWRITE_DATASTORE)
+$null = $spEntity.Add($spData)
 
 
 # Example: Adding an Azure subscription entity
@@ -29,17 +31,20 @@ $subData = @{
     az_subscription_id   = $credentialDefinition.az_subscription_id
     az_subscription_name = $credentialDefinition.az_subscription_name
 }
-$subSchema = [PsEntitySchema]::new('.\schemas\az_subscription.json')
-$subEntity = [PsEntity]::new($subSchema)
-$subEntity.Add($subData)
+$subSchema = New-PsEntitySchema -SchemaPath '.\schemas\az_subscription.json'
+$subEntity = New-PsEntity -Schema $subSchema
+$subEntity.Create($OVERWRITE_DATASTORE)
+$null = $subEntity.Add($subData)
+
 
 # Example: Adding a GitHub repository environment entity
 $ghRepoEnvData = @{
     gh_repo_environment_name = $credentialDefinition.gh_repo_environment_name
 }
-$ghRepoEnvSchema = [PsEntitySchema]::new('.\schemas\gh_repo_environment.json')
-$ghRepoEnvEntity = [PsEntity]::new($ghRepoEnvSchema)
-$gh_repo_environment = $ghRepoEnvEntity.Add($ghRepoEnvData)
+$ghRepoEnvSchema = New-PsEntitySchema -SchemaPath '.\schemas\gh_repo_environment.json'
+$ghRepoEnvEntity = New-PsEntity -Schema $ghRepoEnvSchema
+$ghRepoEnvEntity.Create($OVERWRITE_DATASTORE)
+$ghRepoEnvCreationResult = $ghRepoEnvEntity.Add($ghRepoEnvData)
 
 
 # Example: Adding a GitHub repository entity
@@ -47,22 +52,24 @@ $ghRepoData = @{
     gh_repository_id   = $credentialDefinition.gh_repository_id
     gh_repository_name = $credentialDefinition.gh_repository_name
 }
-$ghRepoSchema = [PsEntitySchema]::new('.\schemas\gh_repository.json')
-$ghRepoEntity = [PsEntity]::new($ghRepoSchema)
-$ghRepoEntity.Add($ghRepoData)
+$ghRepoSchema = New-PsEntitySchema -SchemaPath '.\schemas\gh_repository.json'
+$ghRepoEntity = New-PsEntity -Schema $ghRepoSchema
+$ghRepoEntity.Create($OVERWRITE_DATASTORE)
+$null = $ghRepoEntity.Add($ghRepoData)
+
 
 # Example: Adding a GitHub credential entity based on Azure service principal
 $ghCredData = @{
     gh_az_credential_id     = $credentialDefinition.gh_az_credential_id
     gh_repository_id        = $credentialDefinition.gh_repository_id
-    gh_repo_environment_id  = $gh_repo_environment.gh_repo_environment_id
+    gh_repo_environment_id  = $ghRepoEnvCreationResult.gh_repo_environment_id
     az_subscription_id      = $credentialDefinition.az_subscription_id
     az_service_principal_id = $credentialDefinition.az_service_principal_id
 }
-$ghCredSchema = [PsEntitySchema]::new('.\schemas\gh_az_credential.json')
-$ghCredEntity = [PsEntity]::new($ghCredSchema)
-$ghCredEntity.Add($ghCredData)
+$ghCredSchema = New-PsEntitySchema -SchemaPath '.\schemas\gh_az_credential.json'
+$ghCredEntity = New-PsEntity -Schema $ghCredSchema
+$ghCredEntity.Create($OVERWRITE_DATASTORE)
+$null = $ghCredEntity.Add($ghCredData)
 
 
-$gh_az_credential = [psentity]::Open('.\schemas\gh_az_credential.json')
-$gh_az_credential.Data
+$ghCredEntity.ReadRows()

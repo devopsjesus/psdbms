@@ -1,0 +1,11 @@
+{
+    "name": "mismatched_parent",
+    "path": "mismatched_parent.csv",
+    "columns": [
+        {
+            "name": "id",
+            "type": "string",
+            "key": true
+        }
+    ]
+}

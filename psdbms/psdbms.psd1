@@ -7,28 +7,16 @@
     PowerShellVersion = '7.0'
     CompatiblePSEditions = @('Core')
 
-    ScriptsToProcess = @(
-        'classes\ps_entity.ps1'
+    FunctionsToExport = @(
+        'New-PsEntitySchema'
+        'New-PsEntity'
     )
-
-    FunctionsToExport = @()
     CmdletsToExport   = @()
     VariablesToExport = @()
     AliasesToExport   = @()
 
     FileList = @(
         'psdbms.psm1'
-        'classes\ps_entity.ps1'
-        'data\az_service_principal.csv'
-        'data\az_subscription.csv'
-        'data\gh_az_credential.csv'
-        'data\gh_repository.csv'
-        'data\gh_repo_environment.csv'
-        'schemas\az_service_principal.json'
-        'schemas\az_subscription.json'
-        'schemas\gh_az_credential.json'
-        'schemas\gh_repository.json'
-        'schemas\gh_repo_environment.json'
     )
 
     PrivateData = @{

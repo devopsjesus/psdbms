@@ -1,0 +1,34 @@
+{
+    "name": "sample",
+    "path": "sample.csv",
+    "columns": [
+        {
+            "name": "id",
+            "type": "guid",
+            "key": true,
+            "generated": true
+        },
+        {
+            "name": "tenant",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "name",
+            "type": "string",
+            "required": true
+        },
+        {
+            "name": "active",
+            "type": "bool"
+        }
+    ],
+    "uniqueGroups": [
+        {
+            "columns": [
+                "tenant",
+                "name"
+            ]
+        }
+    ]
+}

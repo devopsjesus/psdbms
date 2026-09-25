@@ -1,0 +1,17 @@
+{
+    "name": "mismatched_child",
+    "path": "mismatched_child.csv",
+    "columns": [
+        {
+            "name": "child_id",
+            "type": "string",
+            "key": true
+        },
+        {
+            "name": "parent_id",
+            "type": "string",
+            "required": true,
+            "references": "mismatched_parent.csv"
+        }
+    ]
+}

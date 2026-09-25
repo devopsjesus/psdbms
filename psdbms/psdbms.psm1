@@ -1,27 +1,16 @@
 class PsDataColumn
 {
 	[ValidateNotNullOrEmpty()]
-	[string]
-    $Name
+	[string] $Name
 
 	[ValidateSet('string', 'int', 'long', 'decimal', 'double', 'bool', 'datetime', 'guid', 'uri')]
-	[string]
-    $Type = 'string'
+	[string] $Type = 'string'
 
-	[bool]
-    $Required = $false
-	
-    [bool]
-    $Key = $false
-	
-    [bool]
-    $Unique = $false
-
-	[bool]
-	$Generated = $false
-	
-    [string]
-    $References
+	[bool] $Required = $false
+	[bool] $Key = $false
+	[bool] $Unique = $false
+	[bool] $Generated = $false
+	[string] $References
 
 	PsDataColumn([System.Collections.IDictionary] $Properties) {
 		foreach ($property in $Properties.Keys) {
@@ -175,14 +164,6 @@ class PsEntity
 
 	PsEntity([PsEntitySchema] $Schema) {
 		$this.Schema = $Schema
-	}
-
-	static [PsEntity] Open([string] $SchemaPath) {
-		$entitySchema = [PsEntitySchema]::new($SchemaPath)
-		$entity = [PsEntity]::new($entitySchema)
-		$entity.Validate()
-		$entity.Data = $entity.ReadRows()
-		return $entity
 	}
 
 	[void] Validate() {
@@ -402,7 +383,10 @@ class PsEntity
 				'long' { return ([long] $Value).ToString([System.Globalization.CultureInfo]::InvariantCulture) }
 				'decimal' { return ([decimal] $Value).ToString([System.Globalization.CultureInfo]::InvariantCulture) }
 				'double' { return ([double] $Value).ToString('R', [System.Globalization.CultureInfo]::InvariantCulture) }
-				'bool' { return ([bool] $Value).ToString().ToLowerInvariant() }
+				'bool' {
+					$booleanValue = if ($Value -is [string]) { [bool]::Parse($Value) } else { [bool] $Value }
+					return $booleanValue.ToString().ToLowerInvariant()
+				}
 				'datetime' { return ([datetime] $Value).ToUniversalTime().ToString('o', [System.Globalization.CultureInfo]::InvariantCulture) }
 				'guid' { return ([guid] $Value).ToString() }
 				'uri' {
@@ -496,5 +480,36 @@ class PsEntity
 		}
 		$Rows | Select-Object $this.Schema.Columns.Name | Export-Csv -LiteralPath $this.Schema.Path -NoTypeInformation -Encoding utf8
 	}
+}
 
+function New-PsEntitySchema
+{
+	[CmdletBinding()]
+	[OutputType([PsEntitySchema])]
+	param(
+		[Parameter(Mandatory, Position = 0)]
+		[string] $SchemaPath,
+
+		[Parameter(Position = 1)]
+		[string] $DataPath
+	)
+
+	if ($PSBoundParameters.ContainsKey('DataPath')) {
+		return [PsEntitySchema]::new($SchemaPath, $DataPath)
+	}
+	return [PsEntitySchema]::new($SchemaPath)
+}
+
+function New-PsEntity
+{
+	[CmdletBinding()]
+	[OutputType([PsEntity])]
+	param(
+		[Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+		[PsEntitySchema] $Schema
+	)
+
+	process {
+		return [PsEntity]::new($Schema)
+	}
 }

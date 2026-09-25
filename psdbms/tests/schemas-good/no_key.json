@@ -1,0 +1,11 @@
+{
+    "name": "no-key",
+    "path": "no-key.csv",
+    "columns": [
+        {
+            "name": "name",
+            "type": "string",
+            "required": true
+        }
+    ]
+}
