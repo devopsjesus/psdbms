@@ -1,4 +1,6 @@
 Import-Module '.\psdbms\psdbms.psd1'
+
+Write-Output "Initializing datastore."
 $OVERWRITE_DATASTORE = $false
 
 # Example credential definition
@@ -69,7 +71,10 @@ $ghCredData = @{
 $ghCredSchema = New-PsEntitySchema -SchemaPath '.\schemas\gh_az_credential.json'
 $ghCredEntity = New-PsEntity -Schema $ghCredSchema
 $ghCredEntity.Create($OVERWRITE_DATASTORE)
-$null = $ghCredEntity.Add($ghCredData)
+$newCredentialRecord = $ghCredEntity.Add($ghCredData)
 
+Write-Output "Newly created credential:"
+$ghCredEntity.Find($newCredentialRecord.gh_az_credential_id)
 
-$ghCredEntity.ReadRows()
+Write-Output "Running query script on newly created credential."
+. ./query-things.ps1 -Id $newCredentialRecord.gh_az_credential_id

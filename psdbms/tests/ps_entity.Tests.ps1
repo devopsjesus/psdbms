@@ -29,6 +29,7 @@ Describe 'PsEntity CRUD' {
         $record = $script:entity.Add(@{ id = $script:id; tenant = 'one'; name = 'Ada'; active = $true })
         $record.id | Should -Be $script:id.ToString()
 
+        $script:entity.Find($script:id).name | Should -Be 'Ada'
         $script:entity.Find(@{ id = $script:id }).name | Should -Be 'Ada'
         $script:entity.Update($script:id, @{ name = 'Grace' }).name | Should -Be 'Grace'
 
@@ -36,12 +37,13 @@ Describe 'PsEntity CRUD' {
         $script:entity.Find(@{}).Count | Should -Be 0
     }
 
-    It 'supports scalar and composite schema keys for updates' {
+    It 'supports inferred and composite schema keys' {
         $noKeyPath = Join-Path $TestDrive 'no-key.csv'
         $noKeySchemaPath = Join-Path $PSScriptRoot 'schemas-good\no_key.json'
         $noKeyEntity = [PsEntity]::new([PsEntitySchema]::new($noKeySchemaPath, $noKeyPath))
         $noKeyEntity.Create()
         $null = $noKeyEntity.Add(@{ name = 'Ada' })
+        { $noKeyEntity.Find('Ada') } | Should -Throw '*exactly one key column; found 0*'
         { $noKeyEntity.Update('Ada', @{ name = 'Grace' }) } | Should -Throw '*exactly one key column; found 0*'
 
         $multipleKeyPath = Join-Path $TestDrive 'multiple-key.csv'
@@ -49,6 +51,7 @@ Describe 'PsEntity CRUD' {
         $multipleKeyEntity = [PsEntity]::new([PsEntitySchema]::new($multipleKeySchemaPath, $multipleKeyPath))
         $multipleKeyEntity.Create()
         $null = $multipleKeyEntity.Add(@{ first_id = '1'; second_id = '2'; name = 'Ada' })
+        { $multipleKeyEntity.Find('1') } | Should -Throw '*exactly one key column; found 2*'
         { $multipleKeyEntity.Update('1', @{ name = 'Grace' }) } | Should -Throw '*exactly one key column; found 2*'
         { $multipleKeyEntity.Update(@{ first_id = '1' }, @{ name = 'Grace' }) } | Should -Throw '*must contain exactly these columns*'
         $multipleKeyEntity.Update(@{ first_id = '1'; second_id = '2' }, @{ name = 'Grace' }).name | Should -Be 'Grace'
@@ -161,7 +164,19 @@ Describe 'PsEntity references' {
         { $child.Add(@{ parent_id = 'missing'; child_name = 'Child' }) } | Should -Throw '*does not exist in reference*'
         $childRecord = $child.Add(@{ parent_id = $parentRecord.parent_id; child_name = 'Child' })
         $childRecord.parent_id | Should -Be $parentRecord.parent_id
+        $referencedRow = $child.GetReferencedRowByKey('parent_id', $childRecord.parent_id)
+        $referencedRow.parent_id | Should -Be $parentRecord.parent_id
+        $referencedRow.parent_name | Should -Be 'Parent'
         { $child.Update($childRecord.child_id, @{ parent_id = 'missing' }) } | Should -Throw '*does not exist in reference*'
+    }
+
+    It 'validates referenced row queries' {
+        $childSchemaPath = Join-Path $PSScriptRoot 'schemas-good\child.json'
+        $child = [PsEntity]::new([PsEntitySchema]::new($childSchemaPath, (Join-Path $TestDrive 'query\child.csv')))
+
+        { $child.GetReferencedRowByKey('missing', 'value') } | Should -Throw '*not defined*'
+        { $child.GetReferencedRowByKey('child_name', 'value') } | Should -Throw '*does not reference*'
+        { $child.GetReferencedRowByKey('parent_id', 'value') } | Should -Throw '*Referenced entity*was not found*'
     }
 
     It 'rejects a missing referenced entity' {

@@ -160,8 +160,6 @@ class PsEntity
 	[ValidateNotNull()]
 	[PsEntitySchema] $Schema
 
-	[object[]] $Data
-
 	PsEntity([PsEntitySchema] $Schema) {
 		$this.Schema = $Schema
 	}
@@ -220,8 +218,45 @@ class PsEntity
 		})
 	}
 
+	[object[]] Find([object] $Key) {
+		$keyColumn = $this.GetKeyColumn('Find')
+		return $this.Find(@{ $keyColumn.Name = $Key })
+	}
+
+	[pscustomobject] GetReferencedRowByKey([string] $ColumnName, [object] $KeyValue) {
+		$column = @($this.Schema.Columns | Where-Object Name -ceq $ColumnName)
+		if ($column.Count -eq 0) {
+			throw "Column '$ColumnName' is not defined by entity '$($this.Schema.Name)'."
+		}
+		if ([string]::IsNullOrWhiteSpace($column[0].References)) {
+			throw "Column '$ColumnName' does not reference another entity."
+		}
+
+		$normalizedKey = $this.ConvertToStorageValue($column[0], $KeyValue)
+		$referencePath = $column[0].References
+		if (-not [System.IO.Path]::IsPathRooted($referencePath)) {
+			$referencePath = Join-Path (Split-Path -Parent $this.Schema.Path) $referencePath
+		}
+		$referencePath = [System.IO.Path]::GetFullPath($referencePath)
+		if (-not (Test-Path -LiteralPath $referencePath -PathType Leaf)) {
+			throw "Referenced entity '$referencePath' was not found."
+		}
+
+		$header = Get-Content -LiteralPath $referencePath -First 1
+		$columns = @(($header -split ',').Trim('"'))
+		if ($ColumnName -notin $columns) {
+			throw "Referenced entity '$referencePath' does not contain matching key column '$ColumnName'."
+		}
+
+		$matchingRows = @(Import-Csv -LiteralPath $referencePath | Where-Object { $_.$ColumnName -ceq $normalizedKey })
+		if ($matchingRows.Count -ne 1) {
+			throw "Referenced entity query for column '$ColumnName' and value '$normalizedKey' expected one record but found $($matchingRows.Count)."
+		}
+		return $matchingRows[0]
+	}
+
 	[pscustomobject] Update([object] $Key, [hashtable] $Changes) {
-		$keyColumn = $this.GetKeyColumn()
+		$keyColumn = $this.GetKeyColumn('Update')
 		return $this.UpdateByKey(@{ $keyColumn.Name = $Key }, $Changes)
 	}
 
@@ -319,10 +354,10 @@ class PsEntity
 		return $this.ValidateRecord($Record, $true)
 	}
 
-	hidden [PsDataColumn] GetKeyColumn() {
+	hidden [PsDataColumn] GetKeyColumn([string] $Operation) {
 		$keyColumns = @($this.Schema.Columns | Where-Object Key)
 		if ($keyColumns.Count -ne 1) {
-			throw "Update requires entity '$($this.Schema.Name)' to define exactly one key column; found $($keyColumns.Count)."
+			throw "$Operation requires entity '$($this.Schema.Name)' to define exactly one key column; found $($keyColumns.Count)."
 		}
 		return $keyColumns[0]
 	}

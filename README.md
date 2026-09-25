@@ -13,7 +13,7 @@ $people.Create()
 
 $record = $people.Add(@{ name = 'Ada'; active = $true })
 $id = $record.id
-$people.Find(@{ id = $id })
+$people.Find($id)
 $people.Update($id, @{ name = 'Grace' })
 $people.Remove(@{ id = $id })
 ```
@@ -67,6 +67,8 @@ $peopleEntity.Validate()
 $peopleEntity.Find(@{ name = 'Ada' })
 ```
 
+Passing a single value to `Find()` compares it to the entity's sole key column. Use a hashtable for named criteria; scalar lookup is rejected when the schema defines zero or multiple keys.
+
 Retrieval loads key, required, type, uniqueness, and relationship metadata from the schema and validates it against the CSV header.
 
 Supported types are `string`, `int`, `long`, `decimal`, `double`, `bool`, `datetime`, `guid`, and `uri`. A key is automatically required and unique. Other columns can set `unique` explicitly. A key can set `generated` to create its value when omitted: `string` and `guid` keys receive a GUID, while `int` and `long` keys receive the next numeric value. Callers may still provide an explicit value.
@@ -84,6 +86,15 @@ Relationships reference another entity by path. The foreign-key column name must
 ```
 
 Here, the local `id` value is checked against the `id` column in `people.csv`. A reference is rejected if the referenced entity does not contain a same-named column or the value is absent. References are enforced when records are added or updated. The bundled schemas represent a GitHub and Azure credential model, while the entity engine itself is domain independent.
+
+Retrieve the complete row from a referenced entity using the shared key column:
+
+```powershell
+$repository = $credentialEntity.GetReferencedRowByKey(
+	'gh_repository_id',
+	$credential.gh_repository_id
+)
+```
 
 ## Scope
 
