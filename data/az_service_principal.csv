@@ -1,2 +1,0 @@
-"az_service_principal_id","az_service_principal_name","az_service_principal_secr_kv_ref"
-"6340792e-2589-46f1-a693-1d6e64d52c13","sp-name","https://example.test/secrets/test-secret"
