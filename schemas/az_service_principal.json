@@ -12,11 +12,6 @@
             "name": "az_service_principal_name",
             "type": "string",
             "required": true
-        },
-        {
-            "name": "az_service_principal_secr_kv_ref",
-            "type": "uri",
-            "required": true
         }
     ]
 }

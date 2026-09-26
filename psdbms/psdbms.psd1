@@ -8,7 +8,8 @@
     CompatiblePSEditions = @('Core')
 
     FunctionsToExport = @(
-        'New-PsEntitySchema'
+        'Get-PsEntitySchema'
+        'Get-PsEntity'
         'New-PsEntity'
     )
     CmdletsToExport   = @()

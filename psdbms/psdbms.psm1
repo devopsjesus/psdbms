@@ -320,7 +320,8 @@ class PsEntity
 		$header = Get-Content -LiteralPath $this.Schema.Path -First 1
 		$actualColumns = @(($header -split ',').Trim('"'))
 		$expectedColumns = @($this.Schema.Columns.Name)
-		if (($actualColumns.Count -ne $expectedColumns.Count) -or (Compare-Object $expectedColumns $actualColumns)) {
+		if (($actualColumns.Count -ne $expectedColumns.Count) -or
+			(($actualColumns -join "`0") -cne ($expectedColumns -join "`0"))) {
 			throw "Entity '$($this.Schema.Path)' does not match schema '$($this.Schema.Name)'."
 		}
 	}
@@ -517,7 +518,7 @@ class PsEntity
 	}
 }
 
-function New-PsEntitySchema
+function Get-PsEntitySchema
 {
 	[CmdletBinding()]
 	[OutputType([PsEntitySchema])]
@@ -541,10 +542,43 @@ function New-PsEntity
 	[OutputType([PsEntity])]
 	param(
 		[Parameter(Mandatory, Position = 0, ValueFromPipeline)]
+		[PsEntitySchema] $Schema,
+
+		[switch] $Force
+	)
+
+	process {
+		$entity = [PsEntity]::new($Schema)
+		$entity.Create($Force.IsPresent)
+		return $entity
+	}
+}
+
+function Get-PsEntity
+{
+	[CmdletBinding(DefaultParameterSetName = 'Path')]
+	[OutputType([PsEntity])]
+	param(
+		[Parameter(Mandatory, Position = 0, ParameterSetName = 'Path')]
+		[string] $SchemaPath,
+
+		[Parameter(Position = 1, ParameterSetName = 'Path')]
+		[string] $DataPath,
+
+		[Parameter(Mandatory, Position = 0, ValueFromPipeline, ParameterSetName = 'Schema')]
 		[PsEntitySchema] $Schema
 	)
 
 	process {
-		return [PsEntity]::new($Schema)
+		if ($PSCmdlet.ParameterSetName -eq 'Path') {
+			$schemaParameters = @{ SchemaPath = $SchemaPath }
+			if ($PSBoundParameters.ContainsKey('DataPath')) {
+				$schemaParameters.DataPath = $DataPath
+			}
+			$Schema = Get-PsEntitySchema @schemaParameters
+		}
+		$entity = [PsEntity]::new($Schema)
+		$entity.Validate()
+		return $entity
 	}
 }

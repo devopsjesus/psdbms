@@ -25,6 +25,19 @@ Describe 'PsEntity CRUD' {
         (Get-Content -LiteralPath $script:dataPath -First 1).Trim('"') | Should -Be 'id","tenant","name","active'
     }
 
+    It 'rejects CSV headers that do not match the schema' {
+        $invalidHeaders = @(
+            '"id","tenant","name"'
+            '"tenant","id","name","active"'
+            '"id","tenant","name","active","extra"'
+        )
+
+        foreach ($header in $invalidHeaders) {
+            Set-Content -LiteralPath $script:dataPath -Value $header
+            { $script:entity.Validate() } | Should -Throw '*does not match schema*'
+        }
+    }
+
     It 'adds, finds, updates, and removes records' {
         $record = $script:entity.Add(@{ id = $script:id; tenant = 'one'; name = 'Ada'; active = $true })
         $record.id | Should -Be $script:id.ToString()
@@ -179,6 +192,23 @@ Describe 'PsEntity references' {
         { $child.GetReferencedRowByKey('parent_id', 'value') } | Should -Throw '*Referenced entity*was not found*'
     }
 
+    It 'requires exactly one referenced row' {
+        $parentPath = Join-Path $TestDrive 'parent.csv'
+        Set-Content -LiteralPath $parentPath -Value '"parent_id","parent_name"'
+
+        $childSchemaPath = Join-Path $PSScriptRoot 'schemas-good\child.json'
+        $child = [PsEntity]::new([PsEntitySchema]::new($childSchemaPath, (Join-Path $TestDrive 'child.csv')))
+
+        { $child.GetReferencedRowByKey('parent_id', 'parent-1') } | Should -Throw '*expected one record but found 0*'
+
+        @(
+            [pscustomobject] @{ parent_id = 'parent-1'; parent_name = 'First' }
+            [pscustomobject] @{ parent_id = 'parent-1'; parent_name = 'Second' }
+        ) | Export-Csv -LiteralPath $parentPath -NoTypeInformation
+
+        { $child.GetReferencedRowByKey('parent_id', 'parent-1') } | Should -Throw '*expected one record but found 2*'
+    }
+
     It 'rejects a missing referenced entity' {
         $childSchemaPath = Join-Path $PSScriptRoot 'schemas-good\child.json'
         $child = [PsEntity]::new([PsEntitySchema]::new($childSchemaPath, (Join-Path $TestDrive 'orphan\child.csv')))
@@ -203,16 +233,28 @@ Describe 'PsEntity references' {
 }
 
 Describe 'module surface' {
-    It 'creates schema and entity objects through exported functions' {
+    It 'creates and loads entities through exported functions' {
         $schemaPath = Join-Path $PSScriptRoot 'schemas-good\sample.json'
         $dataPath = Join-Path $TestDrive 'wrapper.csv'
 
-        $schema = New-PsEntitySchema -SchemaPath $schemaPath -DataPath $dataPath
+        $schema = Get-PsEntitySchema -SchemaPath $schemaPath -DataPath $dataPath
         $entity = $schema | New-PsEntity
+        $loaded = Get-PsEntity -SchemaPath $schemaPath -DataPath $dataPath
+        $loadedFromSchema = $schema | Get-PsEntity
 
         $schema | Should -BeOfType PsEntitySchema
         $schema.Path | Should -Be $dataPath
         $entity | Should -BeOfType PsEntity
-        @(Get-Command -Module psdbms -CommandType Function).Name | Should -Be @('New-PsEntity', 'New-PsEntitySchema')
+        Test-Path -LiteralPath $dataPath -PathType Leaf | Should -BeTrue
+        $loaded | Should -BeOfType PsEntity
+        $loadedFromSchema | Should -BeOfType PsEntity
+        $loadedFromSchema.Schema.Name | Should -Be $schema.Name
+        $loadedFromSchema.Schema.Path | Should -Be $schema.Path
+        { $loaded.Add(@{ tenant = 'one'; name = 'Ada' }) } | Should -Not -Throw
+        { New-PsEntity -Schema $schema } | Should -Throw '*already exists*'
+        $recreated = New-PsEntity -Schema $schema -Force
+        $recreated.Find(@{}).Count | Should -Be 0
+        { Get-PsEntity -SchemaPath $schemaPath -DataPath (Join-Path $TestDrive 'missing.csv') } | Should -Throw '*was not found*'
+        @(Get-Command -Module psdbms -CommandType Function).Name | Should -Be @('Get-PsEntity', 'Get-PsEntitySchema', 'New-PsEntity')
     }
 }

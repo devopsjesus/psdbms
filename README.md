@@ -7,9 +7,8 @@ A lightweight, schema-driven entity manager for PowerShell. It uses CSV files wh
 ```powershell
 Import-Module ./psdbms/psdbms.psd1
 
-$schema = New-PsEntitySchema -SchemaPath './schemas/people.json'
+$schema = Get-PsEntitySchema -SchemaPath './schemas/people.json'
 $people = New-PsEntity -Schema $schema
-$people.Create()
 
 $record = $people.Add(@{ name = 'Ada'; active = $true })
 $id = $record.id
@@ -24,7 +23,7 @@ For a schema with multiple key columns, pass all key values as a hashtable:
 $entity.Update(@{ tenant_id = 'tenant-1'; record_id = 'record-1' }, @{ name = 'Grace' })
 ```
 
-`Create()` refuses to overwrite an existing file. Use `Create($true)` to recreate it.
+`New-PsEntity` creates the CSV and refuses to overwrite an existing file. Use `New-PsEntity -Schema $schema -Force` to recreate it. Use `Get-PsEntity` to load and validate an existing CSV without recreating it.
 
 ## JSON schemas
 
@@ -48,23 +47,28 @@ Schemas are reusable and remain separate from application code:
 Paths are resolved relative to the schema file:
 
 ```powershell
-$schema = New-PsEntitySchema -SchemaPath './schemas/people.json'
+$schema = Get-PsEntitySchema -SchemaPath './schemas/people.json'
 $people = New-PsEntity -Schema $schema
-$people.Create()
 ```
 
 Override the schema's data path with the two-argument constructor:
 
 ```powershell
-$schema = New-PsEntitySchema -SchemaPath './schemas/people.json' -DataPath './alternate/people.csv'
+$schema = Get-PsEntitySchema -SchemaPath './schemas/people.json' -DataPath './alternate/people.csv'
 ```
 
 The schema JSON remains the authoritative metadata source. To access an existing entity without recreating its CSV, construct it from the schema and validate the data source:
 
 ```powershell
-$peopleEntity = New-PsEntitySchema -SchemaPath './schemas/people.json' | New-PsEntity
-$peopleEntity.Validate()
+$peopleEntity = Get-PsEntity -SchemaPath './schemas/people.json'
 $peopleEntity.Find(@{ name = 'Ada' })
+```
+
+An existing `PsEntitySchema` object can also be passed directly or through the pipeline:
+
+```powershell
+$peopleEntity = Get-PsEntity -Schema $schema
+$peopleEntity = $schema | Get-PsEntity
 ```
 
 Passing a single value to `Find()` compares it to the entity's sole key column. Use a hashtable for named criteria; scalar lookup is rejected when the schema defines zero or multiple keys.
